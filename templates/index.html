@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Full-Screen Rotated Video Feed</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+        }
+        img {
+            width: 100vw; /* Viewport width */
+            height: 100vh; /* Viewport height */
+            object-fit: cover; /* Ensures the video covers the entire screen */
+            display: block;
+        }
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 15px 30px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            outline: none;
+        }
+        .control-buttons {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        .control-buttons button {
+            padding: 20px 40px;
+            font-size: 24px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            border-radius: 10px; /* Optional: rounded corners */
+        }
+        .entry-button {
+            background-color: green;
+        }
+        .exit-button {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+    <button class="fullscreen-button" onclick="toggleFullScreen()">Full Screen</button>
+
+    <div class="control-buttons">
+        <button class="exit-button" onclick="handleExit()">Exit</button>
+        <button class="entry-button" onclick="handleEntry()">Entry</button>
+    </div>
+
+    <script>
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Automatically request full-screen on page load
+        window.addEventListener('load', function() {
+            toggleFullScreen();
+        });
+
+        // Ensures fullscreen on orientation change
+        window.addEventListener('resize', function() {
+            document.querySelector('img').style.width = window.innerWidth + 'px';
+            document.querySelector('img').style.height = window.innerHeight + 'px';
+        });
+
+        function handleExit() {
+            fetch('/set_exit_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ exit_status: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Exit status set to True");
+            })
+            .catch(error => {
+                console.error("Error setting exit status:", error);
+            });
+        }
+
+        function handleEntry() {
+            fetch('/set_entry_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ entry_status: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Entry status set to True");
+            })
+            .catch(error => {
+                console.error("Error setting entry status:", error);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .sidebar {
+            height: 100%;
+            width: 60px; /* Default collapsed width */
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #004d40;
+            color: white;
+            overflow-x: hidden;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            padding-top: 60px; /* Added padding to accommodate the toggle button */
+        }
+        .sidebar.expanded {
+            width: 250px; /* Expanded width */
+        }
+        .sidebar .toggle-btn {
+            position: absolute;
+            top: 15px; /* Adjusted position */
+            left: 15px; /* Adjusted position */
+            cursor: pointer;
+            color: white;
+            font-size: 24px;
+            z-index: 1000; /* Ensure it’s on top */
+        }
+        .sidebar a {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: white;
+            display: block;
+            font-size: 16px;
+            border-bottom: 1px solid #00796b;
+            transition: background-color 0.3s;
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Ellipsis for overflow text */
+        }
+        .sidebar a:hover {
+            background-color: #00796b;
+        }
+        .content {
+            margin-left: 60px; /* Default collapsed margin */
+            padding: 20px;
+            flex: 1;
+            background-color: #ffffff;
+            overflow-y: auto;
+            transition: margin-left 0.3s;
+        }
+        .content.expanded {
+            margin-left: 250px; /* Expanded margin */
+        }
+        .header {
+            background-color: #00796b;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #004d40;
+            border-top-left-radius: 15px; /* Rounded top left corner */
+            border-top-right-radius: 15px; /* Rounded top right corner */
+        }
+        .header img {
+            height: 40px;
+            margin-right: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            flex: 1;
+        }
+        .header .company-name {
+            font-weight: 600;
+        }
+        .header .clock {
+            font-size: 18px;
+            white-space: nowrap;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #004d40;
+        }
+        input[type="text"],
+        input[type="file"],
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #004d40;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background-color: #00796b;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #004d40;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <span class="toggle-btn" onclick="toggleSidebar()">☰</span>
+        <a href="{{ url_for('face_recognitioon') }}">Face Recognitioon</a>
+        <a href="{{ url_for('add_worker') }}">Add Worker</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+    <div class="content" id="content">
+        <div class="header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo">
+            <h1 class="company-name">{{ company_name }}</h1>
+            <div class="clock" id="clock"></div>
+        </div>
+        <div class="container">
+            <h1>Settings</h1>
+            <form method="post" enctype="multipart/form-data">
+                <label for="company_name">Company Name:</label>
+                <input type="text" id="company_name" name="company_name" value="{{ company_name }}" required>
+                
+                <label for="company_logo">Company Logo:</label>
+                <input type="file" id="company_logo" name="company_logo" accept="image/*">
+                
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var content = document.getElementById('content');
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                content.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('expanded');
+                content.classList.add('expanded');
+            }
+        }
+
+        function updateClock() {
+            var now = new Date();
+            var hours = now.getHours().toString().padStart(2, '0');
+            var minutes = now.getMinutes().toString().padStart(2, '0');
+            var seconds = now.getSeconds().toString().padStart(2, '0');
+            var clockElement = document.getElementById('clock');
+            clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        // Initialize clock immediately
+        updateClock();
+    </script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Worker</title>
+    <link href="https://unpkg.com/cropperjs@1.5.12/dist/cropper.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .sidebar {
+            height: 100%;
+            width: 60px; /* Default collapsed width */
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #004d40;
+            color: white;
+            overflow-x: hidden;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            padding-top: 60px;
+        }
+        .sidebar.expanded {
+            width: 250px; /* Expanded width */
+        }
+        .sidebar .toggle-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            cursor: pointer;
+            color: white;
+            font-size: 24px;
+            z-index: 1000;
+        }
+        .sidebar a {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: white;
+            display: block;
+            font-size: 16px;
+            border-bottom: 1px solid #00796b;
+            transition: background-color 0.3s;
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Ellipsis for overflow text */
+        }
+        .sidebar a:hover {
+            background-color: #00796b;
+        }
+        .content {
+            margin-left: 60px; /* Default collapsed margin */
+            padding: 20px;
+            flex: 1;
+            background-color: #ffffff;
+            overflow-y: auto;
+            transition: margin-left 0.3s;
+            display: flex;
+            flex-direction: column;
+            
+        }
+        .content.expanded {
+            margin-left: 250px; /* Expanded margin */
+        }
+        .header {
+            background-color: #00796b;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #004d40;
+            border-top-left-radius: 15px; /* Rounded top left corner */
+            border-top-right-radius: 15px; /* Rounded top right corner */
+            width: 100%;
+        }
+        .header img {
+            height: 40px;
+            margin-right: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            flex: 1;
+        }
+        .header .company-name {
+            font-weight: 600;
+        }
+        .header .timer {
+            font-size: 18px;
+            white-space: nowrap;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            margin: 2rem;
+        }
+        .form-container h2 {
+            margin-bottom: 1rem;
+        }
+        .form-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .form-container input[type="text"], 
+        .form-container input[type="email"], 
+        .form-container input[type="file"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .file-input-container {
+            border: 2px dashed #007bff;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .file-input-container:hover {
+            background-color: #f0f8ff;
+        }
+        .file-input-container input[type="file"] {
+            display: none;
+        }
+        .file-input-container p {
+            margin: 0;
+            font-size: 1rem;
+            color: #555;
+        }
+        .form-container button {
+            padding: 0.5rem 1rem;
+            background-color: #00796b;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-container button:hover {
+            background-color: #004d40;
+        }
+        .image-preview {
+            width: 100%;
+            height: auto;
+            margin-bottom: 1rem;
+            display: none;  /* Initially hidden */
+        }
+        .cropper-container {
+            margin-bottom: 1rem;
+            max-height: 400px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <span class="toggle-btn" onclick="toggleSidebar()">☰</span>
+        <a href="{{ url_for('face_recognitioon') }}">Face Recognitioon</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('settings') }}">Settings</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+    <div class="content" id="content">
+        <div class="header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo">
+            <h1 class="company-name">{{ company_name }}</h1>
+            <div class="timer" id="timer"></div>
+        </div>
+        <div class="form-container">
+            <h2>Add Worker</h2>
+            <form id="worker-form" action="{{ url_for('add_worker') }}" method="post" enctype="multipart/form-data" onsubmit="cropImage(event)">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+
+                <label for="department">Department:</label>
+                <input type="text" id="department" name="department" required>
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+
+                <label for="contact">Contact:</label>
+                <input type="text" id="contact" name="contact" required>
+
+                <label for="photo">Photo:</label>
+                <div class="file-input-container" id="file-input-container">
+                    <input type="file" id="photo" name="photo" accept="image/*" required onchange="previewImage(event)">
+                    <p>Drag and drop a photo here, or click to select one</p>
+                </div>
+
+                <div class="cropper-container">
+                    <img id="image-preview-img" src="" alt="Image Preview" class="image-preview">
+                </div>
+
+                <button type="submit">Add Worker</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://unpkg.com/cropperjs@1.5.12/dist/cropper.min.js"></script>
+    <script>
+        function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var content = document.getElementById('content');
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                content.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('expanded');
+                content.classList.add('expanded');
+            }
+        }
+
+        let cropper;
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('image-preview-img');
+                    img.src = e.target.result;
+                    
+                    // Display image only after it has been loaded
+                    img.onload = function() {
+                        img.style.display = 'block';
+                    };
+
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+
+                    cropper = new Cropper(img, {
+                        aspectRatio: 480 / 620,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function cropImage(event) {
+            const fileInput = document.getElementById('photo');
+            if (fileInput.files.length === 0) {
+                alert('Please upload an image before submitting the form.');
+                event.preventDefault();  // Prevent form submission
+                return;
+            }
+
+            event.preventDefault();  // Prevent the default form submission
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 480,
+                height: 620,
+            });
+            canvas.toBlob(function(blob) {
+                const form = document.getElementById('worker-form');
+                const newFile = new File([blob], fileInput.files[0].name, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(newFile);
+                fileInput.files = dataTransfer.files;
+
+                form.submit();  // Now submit the form
+            }, 'image/jpeg');
+        }
+
+        const fileInputContainer = document.getElementById('file-input-container');
+        const fileInput = document.getElementById('photo');
+
+        fileInputContainer.addEventListener('click', () => fileInput.click());
+
+        fileInputContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputContainer.style.backgroundColor = '#f0f8ff';
+        });
+
+        fileInputContainer.addEventListener('dragleave', () => {
+            fileInputContainer.style.backgroundColor = '';
+        });
+
+        fileInputContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInputContainer.style.backgroundColor = '';
+            fileInput.files = e.dataTransfer.files;
+            previewImage({ target: fileInput });
+        });
+
+        function updateTimer() {
+            const timerElement = document.getElementById('timer');
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        setInterval(updateTimer, 1000);  // Update the timer every second
+        updateTimer();  // Initial call to set the timer immediately
+    </script>
+</body>
+</html>

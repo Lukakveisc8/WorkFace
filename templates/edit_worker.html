@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Worker</title>
+    <link href="https://unpkg.com/cropperjs@1.5.12/dist/cropper.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+        .sidebar {
+            height: 100%;
+            width: 60px; /* Default collapsed width */
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #004d40;
+            color: white;
+            overflow-x: hidden;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            padding-top: 60px; /* Added padding to accommodate the toggle button */
+        }
+        .sidebar.expanded {
+            width: 250px; /* Expanded width */
+        }
+        .sidebar .toggle-btn {
+            position: absolute;
+            top: 15px; /* Adjusted position */
+            left: 15px; /* Adjusted position */
+            cursor: pointer;
+            color: white;
+            font-size: 24px;
+            z-index: 1000; /* Ensure it’s on top */
+        }
+        .sidebar a {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: white;
+            display: block;
+            font-size: 16px;
+            border-bottom: 1px solid #00796b;
+            transition: background-color 0.3s;
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Ellipsis for overflow text */
+        }
+        .sidebar a:hover {
+            background-color: #00796b;
+        }
+        .header {
+            background-color: #00796b;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #004d40;
+            border-top-left-radius: 15px; /* Rounded top left corner */
+            border-top-right-radius: 15px; /* Rounded top right corner */
+            transition: margin-left 0.3s;
+        }
+        .header img {
+            height: 40px;
+            margin-right: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            flex: 1;
+        }
+        .header .company-name {
+            font-weight: 600;
+        }
+        .header .clock {
+            font-size: 18px;
+            white-space: nowrap;
+        }
+        .content {
+            margin-left: 60px; /* Default collapsed margin */
+            padding: 20px;
+            flex: 1;
+            background-color: #ffffff;
+            overflow-y: auto;
+            transition: margin-left 0.3s;
+        }
+        .content.expanded {
+            margin-left: 250px; /* Expanded margin */
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            margin: 2rem;
+        }
+        .form-container h2 {
+            margin-bottom: 1rem;
+        }
+        .form-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .form-container input[type="text"], 
+        .form-container input[type="email"], 
+        .form-container input[type="file"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .file-input-container {
+            border: 2px dashed #007bff;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .file-input-container:hover {
+            background-color: #f0f8ff;
+        }
+        .file-input-container input[type="file"] {
+            display: none;
+        }
+        .file-input-container p {
+            margin: 0;
+            font-size: 1rem;
+            color: #555;
+        }
+        .form-container button {
+            padding: 0.5rem 1rem;
+            background-color: #00796b;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-container button:hover {
+            background-color: #004d40;
+        }
+        .image-preview {
+            width: 100%;
+            height: auto;
+            margin-bottom: 1rem;
+            display: none;  /* Initially hidden */
+        }
+        .cropper-container {
+            margin-bottom: 1rem;
+            max-height: 400px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <span class="toggle-btn" onclick="toggleSidebar()">☰</span>
+        <a href="{{ url_for('face_recognitioon') }}">Face Recognition</a>
+        <a href="{{ url_for('add_worker') }}">Add Worker</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('settings') }}">Settings</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <div class="content" id="content">
+        <div class="header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo">
+            <h1 class="company-name">{{ company_name }}</h1>
+            <div class="clock" id="clock"></div>
+        </div>
+
+        <div class="form-container">
+            <h2>Edit Worker</h2>
+            <form id="worker-form" action="{{ url_for('edit_worker', worker_id=worker['id']) }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="existing_photo" value="{{ worker['foto_location'] }}">
+
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" value="{{ worker['name_and_surname'] }}" required>
+
+                <label for="department">Department:</label>
+                <input type="text" id="department" name="department" value="{{ worker['department'] }}" required>
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="{{ worker['email'] }}" required>
+
+                <label for="contact">Contact Number:</label>
+                <input type="text" id="contact" name="contact" value="{{ worker['contact'] }}" required>
+
+                <label for="photo">Photo:</label>
+                <div class="file-input-container" id="file-input-container">
+                    <input type="file" id="photo" name="photo" accept="image/*" onchange="previewImage(event)">
+                    <p>Drag and drop a photo here, or click to select one</p>
+                </div>
+
+                <div class="cropper-container">
+                    <img id="image-preview-img" src="" alt="Image Preview" class="image-preview">
+                </div>
+
+                <button type="submit" onclick="cropImage(event)">Update Worker</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/cropperjs@1.5.12/dist/cropper.min.js"></script>
+    <script>
+        let cropper;
+
+        // Function to handle image preview and cropping
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('image-preview-img');
+                    img.src = e.target.result;
+
+                    // Display image only after it has been loaded
+                    img.onload = function() {
+                        img.style.display = 'block';
+
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+
+                        cropper = new Cropper(img, {
+                            aspectRatio: 480 / 620,
+                            viewMode: 1,
+                            autoCropArea: 1,
+                        });
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Function to handle image cropping and form submission
+        function cropImage(event) {
+            if (cropper) {
+                event.preventDefault();  // Prevent the default form submission
+
+                const canvas = cropper.getCroppedCanvas({
+                    width: 480,
+                    height: 620,
+                });
+
+                canvas.toBlob(function(blob) {
+                    const form = document.getElementById('worker-form');
+                    const fileInput = document.getElementById('photo');
+
+                    const newFile = new File([blob], fileInput.files[0] ? fileInput.files[0].name : 'cropped-image.jpg', {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(newFile);
+                    fileInput.files = dataTransfer.files;
+
+                    form.submit();  // Now submit the form
+                });
+            }
+        }
+
+        // Initialize the existing image and cropper on page load
+        window.onload = function() {
+            const img = document.getElementById('image-preview-img');
+            const existingPhoto = document.querySelector('input[name="existing_photo"]').value;
+
+            if (existingPhoto) {
+                img.src = "{{ url_for('static', filename='') }}" + existingPhoto;
+                
+                img.onload = function() {
+                    img.style.display = 'block';
+
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+
+                    cropper = new Cropper(img, {
+                        aspectRatio: 480 / 620,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                    });
+                };
+            }
+        };
+
+        const fileInputContainer = document.getElementById('file-input-container');
+        const fileInput = document.getElementById('photo');
+
+        fileInputContainer.addEventListener('click', () => fileInput.click());
+
+        fileInputContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputContainer.style.backgroundColor = '#f0f8ff';
+        });
+
+        fileInputContainer.addEventListener('dragleave', () => {
+            fileInputContainer.style.backgroundColor = '';
+        });
+
+        fileInputContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInputContainer.style.backgroundColor = '';
+            fileInput.files = e.dataTransfer.files;
+            previewImage({ target: fileInput });
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                content.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('expanded');
+                content.classList.add('expanded');
+            }
+        }
+
+        // Initialize the clock
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+
+</body>
+</html>
